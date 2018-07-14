@@ -24,6 +24,7 @@ var selectedName;
 var controlSocket;
 var connectedDevices = [];
 var evaluate = false;
+var evaluating = false;
 
 const MOVES = ['tob', 'pae', 'charge']
 
@@ -97,11 +98,13 @@ io.on('connection', function(socket){
     if (socket.name === selectedName) {
       data.push(msg);
       
-      if (evaluate && data.length % 10 == 0) {
+      if (evaluate && controlSocket && !evaluating) {
+        evaluating = true
         const start = Date.now()
         const parsedData = [parseData(data.slice(-100))];
         var result = model.predict(tf.tensor3d(parsedData));
         result.data().then(data => {
+          evaluating = false
           const max = argMax(data);
           if (data[max] >= 0.5) {
             const time = Date.now() - start;
