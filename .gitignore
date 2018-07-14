@@ -1,0 +1,4 @@
+node_modules
+/*.h5
+/*.tfjs
+/collector/data

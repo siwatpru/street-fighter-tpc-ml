@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Dev Server</title>
+    <style>
+
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      socket.emit('config', {control: true});
+      
+      function snapshot() {
+        socket.emit('control', {act: 'snapshot'});
+      }
+      function save() {
+        socket.emit('control', {act: 'save', type: document.querySelector('input[name=type]:checked').value});
+      }
+      function _evaluate() {
+        socket.emit('control', {act: 'evaluate'});
+      }
+      
+      function selectDevice() {
+        socket.emit('control', {act: 'device', name: getSelectedDevice()});
+      }
+
+      function getSelectedDevice() {
+        var e = document.getElementById("device");
+        if (e.selectedIndex != -1) {
+          return e.options[e.selectedIndex].value; 
+        } else {
+          return null;
+        }
+      }
+      
+      socket.on('status', function(msg) {
+        var div = document.getElementById('messages');
+        div.innerHTML = msg + "<br>" + div.innerHTML;
+      });
+
+      socket.on('evaluation', function(msg) {
+        var div = document.getElementById('evaluation');
+        div.innerHTML = msg;
+      });
+
+      socket.on('devices', function(devices) {
+        var selected = getSelectedDevice();
+        var html = devices.map(s => "<option" + (s == selected ? " selected" : "") + ">" + s + "</option>").join('');
+        document.getElementById('device').innerHTML = html;
+        selectDevice();
+      });
+    </script>
+  </head>
+  <body>
+    <h1>TPC Data Capture</h1>
+    <div>
+      <label><input type="radio" name="type" value="tob"> Tob</label>
+      <label><input type="radio" name="type" value="pae"> Pae</label>
+      <label><input type="radio" name="type" value="charge"> Charge</label>
+      <label><input type="radio" name="type" value="attack"> Attack</label>
+      <label><input type="radio" name="type" value="shield"> Shield</label>
+    </div>
+    <div>
+      <select id="device" onchange="selectDevice(); return false;">
+      </select>
+    </div>
+    <div>
+      <button onclick="snapshot(); return false;">Snapshot</button>
+      <button onclick="save(); return false;">Save</button>
+      <button onclick="_evaluate(); return false;">Evaluate</button>
+    </div>
+    <pre id="evaluation"></pre>
+    <pre id="messages">Status: Ready</pre>
+  </body>
+</html>
