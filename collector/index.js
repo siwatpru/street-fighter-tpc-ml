@@ -18,7 +18,6 @@ app.get('/', function(req, res){
 });
 
 var data = [];
-var savedData;
 var selectedName;
 
 var controlSocket;
@@ -26,7 +25,7 @@ var connectedDevices = [];
 var evaluate = false;
 var evaluating = false;
 
-const MOVES = ['tob', 'pae', 'charge']
+const MOVES = ['tob', 'pae', 'charge', 'attack', 'shield']
 
 function parseData(arr) {
   // Same logic as in python
@@ -98,7 +97,7 @@ io.on('connection', function(socket){
     if (socket.name === selectedName) {
       data.push(msg);
       
-      if (evaluate && controlSocket && !evaluating) {
+      if (evaluate && controlSocket && !evaluating && data.length > 50) {
         evaluating = true
         const start = Date.now()
         const parsedData = [parseData(data.slice(-100))];
@@ -119,14 +118,9 @@ io.on('connection', function(socket){
     }
   });
   socket.on('control', function(msg) {
-    if (msg.act == "capture") {
-      savedData = data;
-      data = [];
-      controlSocket.emit("status", savedData.length + " events captured.")
-    }
     if (msg.act == "save") {
       var filename = 'data/' + clean(msg.type) + '/' + clean(selectedName) + '_' + Date.now() + '.json';
-      fs.writeFileSync(filename, savedData.map(x => JSON.stringify(x)).join('\n'));
+      fs.writeFileSync(filename, data.slice(-200).map(x => JSON.stringify(x)).join('\n'));
       controlSocket.emit("status", "Saved to " + filename);
     }
     if (msg.act == "device") {
@@ -134,7 +128,7 @@ io.on('connection', function(socket){
       controlSocket.emit("status", "Set current device to " + selectedName);
     }
     if (msg.act == "evaluate") {
-      evaluate = true;
+      evaluate = !evaluate;
     }
   });
 });

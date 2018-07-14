@@ -8,13 +8,17 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
+      var count = 0;
       socket.emit('config', {control: true});
-      
-      function snapshot() {
-        socket.emit('control', {act: 'snapshot'});
+
+      function reset() {
+        count = 0;
+        updateState();
       }
       function save() {
-        socket.emit('control', {act: 'save', type: document.querySelector('input[name=type]:checked').value});
+        socket.emit('control', {act: 'save', type: getState()});
+        count += 1;
+        updateState();
       }
       function _evaluate() {
         socket.emit('control', {act: 'evaluate'});
@@ -31,6 +35,17 @@
         } else {
           return null;
         }
+      }
+      
+      function getState() {
+        var mod = count % 3;
+        if (mod == 0) return 'tob';
+        else if (mod == 1) return 'pae';
+        else return document.querySelector('input[name=type]:checked').value;
+      }
+      
+      function updateState() {
+        document.getElementById('state').innerHTML = getState();
       }
       
       socket.on('status', function(msg) {
@@ -54,22 +69,21 @@
   <body>
     <h1>TPC Data Capture</h1>
     <div>
-      <label><input type="radio" name="type" value="tob"> Tob</label>
-      <label><input type="radio" name="type" value="pae"> Pae</label>
-      <label><input type="radio" name="type" value="charge"> Charge</label>
-      <label><input type="radio" name="type" value="attack"> Attack</label>
-      <label><input type="radio" name="type" value="shield"> Shield</label>
+      <label><input type="radio" name="type" value="charge"> Tob-Pae-Charge</label>
+      <label><input type="radio" name="type" value="attack"> Tob-Pae-Attack</label>
+      <label><input type="radio" name="type" value="shield"> Tob-Pae-Shield</label>
     </div>
     <div>
       <select id="device" onchange="selectDevice(); return false;">
       </select>
     </div>
     <div>
-      <button onclick="snapshot(); return false;">Snapshot</button>
+      <button onclick="reset(); return false;">Reset</button>
       <button onclick="save(); return false;">Save</button>
       <button onclick="_evaluate(); return false;">Evaluate</button>
     </div>
     <pre id="evaluation"></pre>
+    <pre>State: <span id="state">tob</span></pre>
     <pre id="messages">Status: Ready</pre>
   </body>
 </html>

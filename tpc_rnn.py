@@ -16,8 +16,8 @@ import tensorflowjs as tfjs
 
 HOME_DIR = os.path.expanduser("~/")
 INPUT_FOLDER = HOME_DIR + "Desktop/stupid/collector/data"
-MOVES = ['tob', 'pae', 'charge']
-EPOCHES = 15
+MOVES = ['tob', 'pae', 'charge', 'attack', 'shield']
+EPOCHES = 10
 feature_length = 6
 
 print("Loading inputs")
