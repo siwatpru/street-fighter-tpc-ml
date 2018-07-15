@@ -18,7 +18,9 @@ app.get('/', function(req, res){
 });
 
 var data = {};
+var states = {};
 var selectedNames = [];
+var validatedMoves = {};
 
 var controlSocket;
 var connectedDevices = [];
@@ -26,6 +28,23 @@ var evaluate = false;
 var evaluating = false;
 
 const MOVES = ['tob', 'pae', 'charge', 'attack', 'shield']
+
+function applyFilter(name, newMove) {
+  if (!states[name] || states[name].lastMove != newMove) {
+    states[name] = {
+      lastMove: newMove,
+      lastTime: Date.now()
+    };
+    return 0;
+  } else {
+    var time = Date.now() - states[name].lastTime;
+    if (time > 100) {
+      return time;
+    } else {
+      return 0;
+    }
+  }
+}
 
 function parseData(arr) {
   // Same logic as in python
@@ -109,7 +128,12 @@ io.on('connection', function(socket){
           const max = argMax(data);
           if (data[max] >= 0.5) {
             const time = Date.now() - start;
-            controlSocket.emit("evaluation", {msg: "Evaluation " + socket.name + ": <font size=20>" + MOVES[max] + "</font> in " + time + " ms",
+            const ms = applyFilter(socket.name, MOVES[max]);
+            if (ms) {
+              validatedMoves[socket.name] = MOVES[max];
+            }
+            // console.log("Evaluation " + socket.name + ": <font size=20>" + MOVES[max] + "</font> with stable time " + ms + " ms in " + time + " ms");
+            controlSocket.emit("evaluation", {msg: "Evaluation " + socket.name + ": <font size=20>" + validatedMoves[socket.name] + "</font> (" + MOVES[max] +") with stable time " + ms + " ms in " + time + " ms",
               device: clean(socket.name)});
           }
         });
