@@ -66,7 +66,7 @@ model = Sequential()
 model.add(LSTM(64, input_shape=(None, feature_length)))
 model.add(Dropout(0.2))
 model.add(Dense(len(MOVES), activation='softmax'))
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 for epoch in range(EPOCHES):
   for i, (x, y) in enumerate(train_data):
