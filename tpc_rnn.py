@@ -58,7 +58,7 @@ train_data = all_data[0:len(all_data)-test_amount]
 test_data = all_data[len(all_data)-test_amount:]
 model = Sequential()
 model.add(Dropout(0.2, input_shape=(None, feature_length)))
-model.add(LSTM(32))
+model.add(LSTM(64))
 model.add(Dropout(0.2))
 model.add(Dense(len(MOVES), activation='softmax'))
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
@@ -69,10 +69,16 @@ for epoch in range(EPOCHES):
     model.fit(np.array([x]), np.array([y]), batch_size=1)
     
 # Evaluate
+correct = 0
 for i, (x, y) in enumerate(test_data):
-  prediction = model.predict(np.array([x]))
-  print(prediction)
-  print("Predict: " + MOVES[np.argmax(prediction)] + " Actual: " + MOVES[np.argmax(y)])
+  prediction = np.argmax(model.predict(np.array([x])))
+  actual = np.argmax(y)
+  if prediction == actual:
+    correct += 1
+  else:
+    print("Predict: " + MOVES[prediction] + " Actual: " + MOVES[actual])
+percent = str(int(correct / len(test_data) * 100))
+print("Accuracy: " + percent)
 
 model.save('model.h5')
 tfjs.converters.save_keras_model(model, 'model.tfjs')
