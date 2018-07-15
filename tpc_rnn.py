@@ -17,7 +17,8 @@ import tensorflowjs as tfjs
 HOME_DIR = os.path.expanduser("~/")
 INPUT_FOLDER = HOME_DIR + "Desktop/stupid/collector/data"
 MOVES = ['tob', 'pae', 'charge', 'attack', 'shield']
-EPOCHES = 10
+EPOCHES = 2
+VARIANTS = 2
 TEST_RATIO = 0.2
 feature_length = 6
 
@@ -46,7 +47,12 @@ for move in MOVES:
           prev_accel = current
 
       # Only use every other element to improve speed
-      all_data.append((data[1::2], categorical_move))
+      data = data[1::2]
+
+      all_data.append((data, categorical_move))
+      # Drop random data at the end to improve accuracy
+      for variant in range(VARIANTS):
+        all_data.append((data[0:-(variant+1)], categorical_move))
 
 # Superstition!
 random.shuffle(all_data)
@@ -57,8 +63,7 @@ test_amount = int(len(all_data) * TEST_RATIO)
 train_data = all_data[0:len(all_data)-test_amount]
 test_data = all_data[len(all_data)-test_amount:]
 model = Sequential()
-model.add(Dropout(0.2, input_shape=(None, feature_length)))
-model.add(LSTM(64))
+model.add(LSTM(64, input_shape=(None, feature_length)))
 model.add(Dropout(0.2))
 model.add(Dense(len(MOVES), activation='softmax'))
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
