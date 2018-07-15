@@ -25,16 +25,12 @@
       }
       
       function selectDevice() {
-        socket.emit('control', {act: 'device', name: getSelectedDevice()});
+        socket.emit('control', {act: 'device', names: getSelectedDevices()});
       }
 
-      function getSelectedDevice() {
+      function getSelectedDevices() {
         var e = document.getElementById("device");
-        if (e.selectedIndex != -1) {
-          return e.options[e.selectedIndex].value; 
-        } else {
-          return null;
-        }
+        return Array.from(document.getElementById("device").selectedOptions).map(x => x.value);
       }
       
       function getState() {
@@ -54,13 +50,17 @@
       });
 
       socket.on('evaluation', function(msg) {
-        var div = document.getElementById('evaluation');
-        div.innerHTML = msg;
+        var div = document.getElementById('evaluation_' + msg.device);
+        if (!div) {
+          document.getElementById('evaluation').innerHTML += '<div id="evaluation_' + msg.device + '"></div>'
+          div = document.getElementById('evaluation_' + msg.device);
+        }
+        div.innerHTML = msg.msg;
       });
 
       socket.on('devices', function(devices) {
-        var selected = getSelectedDevice();
-        var html = devices.map(s => "<option" + (s == selected ? " selected" : "") + ">" + s + "</option>").join('');
+        var selected = getSelectedDevices();
+        var html = devices.map(s => "<option" + (selected.indexOf(s) != -1 ? " selected" : "") + ">" + s + "</option>").join('');
         document.getElementById('device').innerHTML = html;
         selectDevice();
       });
@@ -74,7 +74,7 @@
       <label><input type="radio" name="type" value="shield"> Tob-Pae-Shield</label>
     </div>
     <div>
-      <select id="device" onchange="selectDevice(); return false;">
+      <select multiple id="device" onchange="selectDevice(); return false;">
       </select>
     </div>
     <div>

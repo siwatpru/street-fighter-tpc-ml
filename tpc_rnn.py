@@ -18,6 +18,7 @@ HOME_DIR = os.path.expanduser("~/")
 INPUT_FOLDER = HOME_DIR + "Desktop/stupid/collector/data"
 MOVES = ['tob', 'pae', 'charge', 'attack', 'shield']
 EPOCHES = 10
+TEST_RATIO = 0.2
 feature_length = 6
 
 print("Loading inputs")
@@ -52,8 +53,9 @@ random.shuffle(all_data)
 random.shuffle(all_data)
 
 print("Training")
-train_data = all_data[0:len(all_data)-3]
-test_data = all_data[len(all_data)-3:]
+test_amount = int(len(all_data) * TEST_RATIO)
+train_data = all_data[0:len(all_data)-test_amount]
+test_data = all_data[len(all_data)-test_amount:]
 model = Sequential()
 model.add(Dropout(0.2, input_shape=(None, feature_length)))
 model.add(LSTM(32))

@@ -17,8 +17,8 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
-var data = [];
-var selectedName;
+var data = {};
+var selectedNames = [];
 
 var controlSocket;
 var connectedDevices = [];
@@ -94,38 +94,43 @@ io.on('connection', function(socket){
     updateDevices();
   })
   socket.on('data', function(msg) {
-    if (socket.name === selectedName) {
-      data.push(msg);
+    if (selectedNames.indexOf(socket.name) != -1) {
+      if (!data[socket.name]) data[socket.name] = [];
+      var thisData = data[socket.name];
+      thisData.push(msg);
       
-      if (evaluate && controlSocket && !evaluating && data.length > 50) {
+      if (evaluate && controlSocket && !evaluating && thisData.length > 50) {
         evaluating = true
         const start = Date.now()
-        const parsedData = [parseData(data.slice(-100))];
+        const parsedData = [parseData(thisData.slice(-100))];
         var result = model.predict(tf.tensor3d(parsedData));
         result.data().then(data => {
           evaluating = false
           const max = argMax(data);
           if (data[max] >= 0.5) {
             const time = Date.now() - start;
-            controlSocket.emit("evaluation", "Evaluation: <font size=20>" + MOVES[max] + "</font> in " + time + " ms");
+            controlSocket.emit("evaluation", {msg: "Evaluation " + socket.name + ": <font size=20>" + MOVES[max] + "</font> in " + time + " ms",
+              device: clean(socket.name)});
           }
         });
       }
       // Periodically clear
-      if (data.length > 5000) {
-        data = data.slice(-500);
+      if (thisData.length > 5000) {
+        data[socket.name] = thisData.slice(-500);
       }
     }
   });
   socket.on('control', function(msg) {
     if (msg.act == "save") {
-      var filename = 'data/' + clean(msg.type) + '/' + clean(selectedName) + '_' + Date.now() + '.json';
-      fs.writeFileSync(filename, data.slice(-200).map(x => JSON.stringify(x)).join('\n'));
-      controlSocket.emit("status", "Saved to " + filename);
+      selectedNames.forEach(selectedName => {
+        var filename = 'data/' + clean(msg.type) + '/' + clean(selectedName) + '_' + Date.now() + '.json';
+        fs.writeFileSync(filename, data[selectedName].slice(-200).map(x => JSON.stringify(x)).join('\n'));
+        controlSocket.emit("status", "Saved to " + filename);
+      })
     }
     if (msg.act == "device") {
-      selectedName = msg.name;
-      controlSocket.emit("status", "Set current device to " + selectedName);
+      selectedNames = msg.names;
+      controlSocket.emit("status", "Set current device to " + selectedNames);
     }
     if (msg.act == "evaluate") {
       evaluate = !evaluate;
