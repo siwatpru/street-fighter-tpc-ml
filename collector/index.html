@@ -34,14 +34,13 @@
       }
       
       function getState() {
-        var mod = count % 3;
-        if (mod == 0) return 'tob';
-        else if (mod == 1) return 'pae';
-        else return document.querySelector('input[name=type]:checked').value;
+        var variants = document.querySelector('input[name=type]:checked').value.split(',');
+        var mod = count % variants.length;
+        return variants[mod];
       }
       
       function updateState() {
-        document.getElementById('state').innerHTML = getState();
+        document.getElementById('state').innerHTML = getState() + " " + count;
       }
       
       socket.on('status', function(msg) {
@@ -69,9 +68,10 @@
   <body>
     <h1>TPC Data Capture</h1>
     <div>
-      <label><input type="radio" name="type" value="charge"> Tob-Pae-Charge</label>
-      <label><input type="radio" name="type" value="attack"> Tob-Pae-Attack</label>
-      <label><input type="radio" name="type" value="shield"> Tob-Pae-Shield</label>
+      <label><input type="radio" name="type" value="tob,pae,charge" onclick="reset(); return;"> Tob-Pae-Charge</label>
+      <label><input type="radio" name="type" value="tob,pae,attack" onclick="reset(); return;"> Tob-Pae-Attack</label>
+      <label><input type="radio" name="type" value="tob,pae,shield" onclick="reset(); return;"> Tob-Pae-Shield</label>
+      <label><input type="radio" name="type" value="other" onclick="reset(); return;"> Other</label>
     </div>
     <div>
       <select multiple id="device" onchange="selectDevice(); return false;">
@@ -83,7 +83,7 @@
       <button onclick="_evaluate(); return false;">Evaluate</button>
     </div>
     <pre id="evaluation"></pre>
-    <pre>State: <span id="state">tob</span></pre>
+    <pre>State: <span id="state"></span></pre>
     <pre id="messages">Status: Ready</pre>
   </body>
 </html>
