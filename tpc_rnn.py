@@ -16,9 +16,9 @@ import tensorflowjs as tfjs
 
 HOME_DIR = os.path.expanduser("~/")
 INPUT_FOLDER = HOME_DIR + "Desktop/stupid/collector/data"
-MOVES = ['tob', 'pae', 'charge', 'attack', 'shield']
-EPOCHES = 2
-VARIANTS = 2
+MOVES = ['tob', 'pae', 'charge', 'attack', 'shield', 'other']
+BATCH_SIZE = 4
+EPOCHS = 4
 TEST_RATIO = 0.2
 feature_length = 6
 
@@ -49,10 +49,8 @@ for move in MOVES:
       # Only use every other element to improve speed
       data = data[1::2]
 
-      all_data.append((data, categorical_move))
-      # Drop random data at the end to improve accuracy
-      for variant in range(VARIANTS):
-        all_data.append((data[0:-(variant+1)], categorical_move))
+      # Use only last ~25 to match evaluation
+      all_data.append((data[-24:], categorical_move))
 
 # Superstition!
 random.shuffle(all_data)
@@ -64,15 +62,18 @@ train_data = all_data[0:len(all_data)-test_amount]
 test_data = all_data[len(all_data)-test_amount:]
 model = Sequential()
 model.add(LSTM(64, input_shape=(None, feature_length)))
-model.add(Dropout(0.2))
+model.add(Dropout(0.5))
 model.add(Dense(len(MOVES), activation='softmax'))
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-for epoch in range(EPOCHES):
-  for i, (x, y) in enumerate(train_data):
-    print("Epoch %d Item %d" % (epoch, i))
-    model.fit(np.array([x]), np.array([y]), batch_size=1)
-    
+xs = []
+ys = []
+for (x, y) in train_data:
+  xs.append(x)
+  ys.append(y)
+
+model.fit(np.array(xs), np.array(ys), batch_size=BATCH_SIZE, epochs=EPOCHS)
+
 # Evaluate
 correct = 0
 for i, (x, y) in enumerate(test_data):
